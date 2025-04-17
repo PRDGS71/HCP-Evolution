@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Brush,
 } from 'recharts';
 import { PlayerData } from '../types';
 
@@ -66,17 +67,22 @@ export const HandicapChart: React.FC<Props> = ({ players }) => {
         </div>
       </div>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={filteredData}>
+        <LineChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="date"
             tickFormatter={(date) => new Date(date).toLocaleDateString()}
           />
-          <YAxis />
+          <YAxis 
+            domain={['dataMin - 1', 'dataMax + 1']}
+            label={{ value: 'Handicap Index', angle: -90, position: 'insideLeft' }}
+          />
           <Tooltip
             labelFormatter={(date) => new Date(date).toLocaleDateString()}
+            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px' }}
           />
-          <Legend />
+          <Legend verticalAlign="top" height={36} />
+          <Brush dataKey="date" height={30} stroke="#8884d8" />
           {players.map((player, index) => (
             <Line
               key={player.name}
@@ -86,6 +92,7 @@ export const HandicapChart: React.FC<Props> = ({ players }) => {
               strokeWidth={2}
               dot={{ r: 4 }}
               activeDot={{ r: 8 }}
+              name={player.name}
             />
           ))}
         </LineChart>

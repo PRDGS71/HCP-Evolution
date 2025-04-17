@@ -14,13 +14,40 @@ function App() {
     const loadPlayerData = async () => {
       const playerData = await Promise.all(
         playerNames.map(async (name) => {
-          const response = await fetch(`/${name.toLowerCase()}HCP.json`);
+          const fileName = name.replace('á', 'a').toLowerCase();
+          const response = await fetch(`/${fileName}HCP.json`);
           const data = await response.json();
-          const transformedData = data.handicap_revisions.map((revision: any) => ({
-            revDate: revision.RevDate.split('T')[0],
-            Value: parseFloat(revision.Value)
-          })).filter((revision: any) => revision.Value !== 999.0);
-          return { name, data: transformedData };
+          const transformedData = data.handicap_revisions
+            .filter((revision: any) => 
+              revision.Value !== 999.0 && 
+              revision.Value !== '999.0' &&
+              revision.Value !== 99.9 && 
+              revision.Value !== '99.9'
+            )
+            .map((revision: any) => ({
+              revDate: revision.RevDate.split('T')[0],
+              Value: parseFloat(revision.Value),
+              LowHI: parseFloat(revision.LowHI) === 999.0 ? null : parseFloat(revision.LowHI)
+            }))
+            .sort((a: any, b: any) => new Date(b.revDate).getTime() - new Date(a.revDate).getTime());
+          
+          const lowestHI = data.handicap_revisions
+            .filter((revision: any) => 
+              revision.LowHI !== '999.0' && 
+              revision.LowHI !== '-' && 
+              revision.LowHI !== null
+            )
+            .reduce((min: number, revision: any) => {
+              const value = parseFloat(revision.LowHI);
+              return value < min ? value : min;
+            }, Infinity);
+
+          return { 
+            name, 
+            data: transformedData,
+            currentHandicap: transformedData[0]?.Value || 0,
+            lowestHandicap: lowestHI === Infinity ? 0 : lowestHI
+          };
         })
       );
       setPlayers(playerData);
@@ -28,6 +55,11 @@ function App() {
 
     loadPlayerData();
   }, []);
+
+  const calculateSandbaggerLevel = (current: number, lowest: number) => {
+    if (lowest === 0) return 0;
+    return ((current - lowest) / lowest) * 100;
+  };
 
   return (
     <Router>
@@ -45,17 +77,41 @@ function App() {
                     <Link
                       key={name}
                       to={`/player/${name}`}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-blue-600 hover:text-blue-800 font-medium"
                     >
                       {name}
                     </Link>
                   ))}
                 </div>
               </div>
+
+              <div className="grid grid-cols-4 gap-4 mb-8">
+                {players.map((player) => (
+                  <div key={player.name} className="bg-white rounded-lg shadow-md p-4">
+                    <h3 className="text-lg font-bold mb-2">{player.name}</h3>
+                    <div className="space-y-2">
+                      <p className="text-sm">
+                        Current HCP: <span className="font-bold">{player.currentHandicap.toFixed(1)}</span>
+                      </p>
+                      <p className="text-sm">
+                        Lowest HCP: <span className="font-bold">{player.lowestHandicap.toFixed(1)}</span>
+                      </p>
+                      <p className="text-sm">
+                        Sandbagger Level: <span className="font-bold">
+                          {calculateSandbaggerLevel(player.currentHandicap, player.lowestHandicap).toFixed(1)}%
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
               
               <div className="bg-white rounded-lg shadow-lg p-6">
                 {players.length > 0 ? (
-                  <HandicapChart players={players} />
+                  <HandicapChart players={players.map(p => ({
+                    ...p,
+                    data: [...p.data].reverse() // Reverse back for chart display
+                  }))} />
                 ) : (
                   <div className="flex items-center justify-center h-96">
                     <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
