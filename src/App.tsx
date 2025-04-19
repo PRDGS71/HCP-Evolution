@@ -9,6 +9,11 @@ const playerNames = ['Fábio', 'Pedro', 'Eduardo', 'Kleber'];
 
 function App() {
   const [players, setPlayers] = useState<PlayerData[]>([]);
+  const today = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   useEffect(() => {
     const loadPlayerData = async () => {
@@ -61,6 +66,32 @@ function App() {
     return ((current - lowest) / lowest) * 100;
   };
 
+  const calculateYearlyUpdates = () => {
+    const years = new Set<number>();
+    players.forEach(player => {
+      player.data.forEach(entry => {
+        years.add(new Date(entry.revDate).getFullYear());
+      });
+    });
+
+    const sortedYears = Array.from(years).sort((a, b) => b - a);
+
+    return {
+      years: sortedYears,
+      updates: players.map(player => ({
+        name: player.name,
+        yearCounts: sortedYears.map(year => ({
+          year,
+          count: player.data.filter(entry => 
+            new Date(entry.revDate).getFullYear() === year
+          ).length
+        }))
+      }))
+    };
+  };
+
+  const yearlyStats = calculateYearlyUpdates();
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
@@ -68,20 +99,12 @@ function App() {
           <Route path="/" element={
             <div className="max-w-7xl mx-auto px-4 py-8">
               <div className="flex items-center justify-between mb-8">
-                <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-3">
-                  <GolfBall className="text-green-600" size={32} />
-                  Handicap Evolution
-                </h1>
-                <div className="flex gap-4">
-                  {playerNames.map((name) => (
-                    <Link
-                      key={name}
-                      to={`/player/${name}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      {name}
-                    </Link>
-                  ))}
+                <div>
+                  <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-3 mb-2">
+                    <GolfBall className="text-green-600" size={32} />
+                    Handicap Evolution
+                  </h1>
+                  <p className="text-gray-600">Last updated: {today}</p>
                 </div>
               </div>
 
@@ -101,16 +124,56 @@ function App() {
                           {calculateSandbaggerLevel(player.currentHandicap, player.lowestHandicap).toFixed(1)}%
                         </span>
                       </p>
+                      <Link
+                        to={`/player/${player.name}`}
+                        className="text-blue-600 hover:text-blue-800 font-medium block text-sm"
+                      >
+                        Evolution
+                      </Link>
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 className="text-xl font-bold mb-4">Yearly Handicap Updates</h2>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Player
+                        </th>
+                        {yearlyStats.years.map(year => (
+                          <th key={year} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {year}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {yearlyStats.updates.map(player => (
+                        <tr key={player.name} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {player.name}
+                          </td>
+                          {player.yearCounts.map(({ year, count }) => (
+                            <td key={year} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {count}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
               
               <div className="bg-white rounded-lg shadow-lg p-6">
                 {players.length > 0 ? (
                   <HandicapChart players={players.map(p => ({
                     ...p,
-                    data: [...p.data].reverse() // Reverse back for chart display
+                    data: [...p.data].reverse()
                   }))} />
                 ) : (
                   <div className="flex items-center justify-center h-96">

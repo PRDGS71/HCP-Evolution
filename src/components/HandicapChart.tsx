@@ -46,6 +46,10 @@ export const HandicapChart: React.FC<Props> = ({ players }) => {
     return true;
   });
 
+  const formatYAxis = (value: number) => {
+    return value.toFixed(1);
+  };
+
   return (
     <div className="w-full h-[600px] p-4">
       <div className="mb-4 flex gap-4">
@@ -75,10 +79,12 @@ export const HandicapChart: React.FC<Props> = ({ players }) => {
           />
           <YAxis 
             domain={['dataMin - 1', 'dataMax + 1']}
+            tickFormatter={formatYAxis}
             label={{ value: 'Handicap Index', angle: -90, position: 'insideLeft' }}
           />
           <Tooltip
             labelFormatter={(date) => new Date(date).toLocaleDateString()}
+            formatter={(value: number) => [value.toFixed(1), 'Handicap']}
             contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px' }}
           />
           <Legend verticalAlign="top" height={36} />

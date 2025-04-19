@@ -10,6 +10,11 @@ interface Props {
 export const PlayerDetail: React.FC<Props> = ({ players }) => {
   const { name } = useParams();
   const player = players.find((p) => p.name === name);
+  const today = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   if (!player) {
     return (
@@ -28,9 +33,12 @@ export const PlayerDetail: React.FC<Props> = ({ players }) => {
         <ArrowLeft size={20} /> Back to Overview
       </Link>
       
-      <div className="flex items-center gap-3 mb-6">
-        <GolfBall className="text-green-600" size={24} />
-        <h1 className="text-3xl font-bold">{player.name}'s Handicap History</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <GolfBall className="text-green-600" size={24} />
+          <h1 className="text-3xl font-bold">{player.name}'s Handicap History</h1>
+        </div>
+        <p className="text-gray-600">Last updated: {today}</p>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
@@ -57,21 +65,31 @@ export const PlayerDetail: React.FC<Props> = ({ players }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                #
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Handicap
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Low HI
+                Low HCP (365d)
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {player.data.map((entry) => (
+            {player.data.map((entry, index, array) => (
               <tr key={entry.revDate} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(entry.revDate).toLocaleDateString()}
+                  {array.length - index}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(entry.revDate).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {entry.Value.toFixed(1)}
